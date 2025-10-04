@@ -1,0 +1,95 @@
+.App {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  color: white;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header p {
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+.persona-selector {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 40px 0;
+}
+
+.persona-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-width: 300px;
+}
+
+.persona-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+.persona-card h2 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+}
+
+.persona-card p {
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.persona-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.teacher-icon {
+  color: #667eea;
+}
+
+.student-icon {
+  color: #28a745;
+}
+
+@media (max-width: 768px) {
+  .persona-selector {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .persona-card {
+    min-width: auto;
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .header p {
+    font-size: 1rem;
+  }
+}
