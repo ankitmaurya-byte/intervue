@@ -84,9 +84,9 @@ cd server && npm start
 ### REST API
 
 - `POST /api/polls` - Create a new poll
-- `GET /api/polls/:pollId` - Get poll information
-- `POST /api/polls/:pollId/join` - Join a poll as student
-- `POST /api/polls/:pollId/questions` - Add a question (teacher only)
+- `GET /api/polls/:` - Get poll information
+- `POST /api/polls/:/join` - Join a poll as student
+- `POST /api/polls/:/questions` - Add a question (teacher only)
 
 ### Socket.io Events
 

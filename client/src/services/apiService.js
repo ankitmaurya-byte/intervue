@@ -1,81 +1,64 @@
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api';
+const API_BASE_URL =
+  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:5000/api";
 
 class ApiService {
+  // Create (or reset) the single poll
   async createPoll() {
     try {
-      const response = await fetch(`${API_BASE_URL}/polls`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(`${API_BASE_URL}/poll`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create poll');
-      }
-      
-      return await response.json();
+      if (!response.ok) throw new Error("Failed to create poll");
+      return await response.json(); // { teacherId, roomKey, teacherKey? }
     } catch (error) {
-      console.error('Error creating poll:', error);
+      console.error("Error creating poll:", error);
       throw error;
     }
   }
 
-  async getPoll(pollId) {
+  // Get current poll state
+  async getPoll() {
     try {
-      const response = await fetch(`${API_BASE_URL}/polls/${pollId}`);
-      
-      if (!response.ok) {
-        throw new Error('Poll not found');
-      }
-      
+      const response = await fetch(`${API_BASE_URL}/poll`, { method: "GET" });
+      if (!response.ok) throw new Error("Poll not found");
       return await response.json();
     } catch (error) {
-      console.error('Error fetching poll:', error);
+      console.error("Error fetching poll:", error);
       throw error;
     }
   }
 
-  async joinPoll(pollId, name, tabId) {
+  // Student join (requires secretKey)
+  async joinPoll(name, tabId, secretKey) {
     try {
-      const response = await fetch(`${API_BASE_URL}/polls/${pollId}/join`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, tabId }),
+      const res = await fetch(`${API_BASE_URL}/poll/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, tabId, secretKey }),
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to join poll');
-      }
-      
-      return await response.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to join poll");
+      return data; // { studentId }
     } catch (error) {
-      console.error('Error joining poll:', error);
+      console.error("Error joining poll:", error);
       throw error;
     }
   }
 
-  async addQuestion(pollId, question, options, teacherId) {
+  // Teacher adds a question (requires teacherId)
+  async addQuestion(question, options,timerSec) {
     try {
-      const response = await fetch(`${API_BASE_URL}/polls/${pollId}/questions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question, options, teacherId }),
+      const response = await fetch(`${API_BASE_URL}/poll/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, options ,timerSec}),
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add question');
-      }
-      
-      return await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Failed to add question");
+      return data; // { questionId }
     } catch (error) {
-      console.error('Error adding question:', error);
+      console.error("Error adding question:", error);
       throw error;
     }
   }

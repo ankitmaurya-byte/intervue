@@ -1,0 +1,178 @@
+/* Import Sora font to match Figma */
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600&display=swap");
+
+:root{
+  --lp-black:#000000;
+  --lp-gray:#454545;
+  --lp-muted:rgba(0,0,0,0.5);
+  --lp-border:#D9D9D9;
+  --lp-grad-1:#8F64E1; /* button left */
+  --lp-grad-2:#1D68BD; /* button right */
+  --lp-badge-1:#7565D9;
+  --lp-badge-2:#4D0ACD;
+}
+
+/* Root layout */
+.lp-root{
+  font-family:"Sora", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:#FFFFFF;
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:88px 16px 32px;
+}
+
+/* Badge */
+.lp-badge{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 12px;
+  min-height:31px;
+  border-radius:24px;
+  background:linear-gradient(90deg, var(--lp-badge-1) 0%, var(--lp-badge-2) 100%);
+  color:#fff;
+  font-weight:600;
+  font-size:14px;
+  line-height:18px;
+  margin-bottom:32px;
+}
+.lp-badge-icon{ display:block; }
+
+/* Header */
+.lp-head{
+  width:100%;
+  max-width:981px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:26px; /* matches Figma */
+  margin-bottom:40px;
+}
+.lp-title{
+  margin:0;
+  text-align:center;
+  font-weight:400;
+  font-size:40px;
+  line-height:50px;
+  color:var(--lp-black);
+}
+.lp-title-strong{ font-weight:600; }
+.lp-subtitle{
+  margin:0;
+  text-align:center;
+  color:var(--lp-muted);
+  font-weight:400;
+  font-size:19px;
+  line-height:24px;
+  max-width:737px;
+}
+
+/* Cards row */
+.lp-cards{
+  position:relative;
+  width:100%;
+  display:flex;
+  gap:32px;
+  align-items:stretch;
+  justify-content:center;
+  margin: 24px 0 56px;
+  flex-wrap:wrap; /* responsiveness */
+}
+
+/* Card base — exact paddings and radius from Figma */
+.lp-card{
+  box-sizing:border-box;
+  width:387px;
+  max-width:100%;
+  min-height:143px;
+  border-radius:10px;
+  padding:15px 17px 15px 25px;
+  text-align:left;
+  background:#fff;
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:border-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+  display:flex;
+  flex-direction:column;
+  gap:17px;
+}
+.lp-card--outlined{
+  border-color:var(--lp-border);
+}
+.lp-card:hover{
+  transform:translateY(-1px);
+}
+.lp-card.is-selected{
+  border-color:var(--lp-grad-1);
+  box-shadow:0 0 0 3px rgba(143,100,225,0.15);
+}
+
+.lp-card-title{
+  margin:0;
+  font-weight:600;
+  font-size:23px;
+  line-height:29px;
+  color:var(--lp-black);
+}
+.lp-card-desc{
+  margin:0;
+  max-width:385px; /* Figma value */
+  color:var(--lp-gray);
+  font-weight:400;
+  font-size:16px;
+  line-height:20px;
+}
+
+/* CTA */
+.lp-cta-wrap{
+  display:flex;
+  justify-content:center;
+  width:100%;
+}
+.lp-cta{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:17px 70px;
+  min-height:57.58px; /* Figma */
+  border-radius:34px;
+  border:none;
+  color:#fff;
+  font-weight:600;
+  font-size:18px;
+  line-height:23px;
+  background:linear-gradient(99.18deg, var(--lp-grad-1) -46.89%, var(--lp-grad-2) 223.45%);
+  cursor:pointer;
+  transition:opacity 120ms ease, transform 80ms ease;
+}
+.lp-cta:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+.lp-cta:not(:disabled):active{
+  transform:translateY(1px) scale(0.99);
+}
+
+/* Error */
+.lp-error{
+  margin-top:16px;
+  color:#B00020;
+  font-size:14px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 920px){
+  .lp-title{ font-size:34px; line-height:44px; }
+  .lp-subtitle{ font-size:18px; }
+}
+@media (max-width: 640px){
+  .lp-root{ padding-top:64px; }
+  .lp-title{ font-size:28px; line-height:36px; }
+  .lp-subtitle{ font-size:16px; line-height:22px; }
+  .lp-cards{ gap:16px; margin-bottom:40px; }
+  .lp-card{ width:100%; }
+  .lp-cta{ width:233.93px; } /* fixes width visually to Figma on small screens */
+}

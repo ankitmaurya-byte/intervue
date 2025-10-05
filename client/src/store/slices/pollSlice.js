@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  pollId: null,
+  
   teacherId: null,
   studentId: null,
   studentName: '',
@@ -22,8 +22,8 @@ const pollSlice = createSlice({
   initialState,
   reducers: {
     setPollData: (state, action) => {
-      const { pollId, teacherId, studentId, studentName, tabId, userType } = action.payload;
-      state.pollId = pollId;
+      const { teacherId, studentId, studentName, tabId, userType } = action.payload;
+      
       state.teacherId = teacherId;
       state.studentId = studentId;
       state.studentName = studentName;

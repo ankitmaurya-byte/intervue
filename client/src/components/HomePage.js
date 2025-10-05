@@ -1,162 +1,132 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setPollData, resetPoll } from '../store/slices/pollSlice';
-import { setSocket, setConnectionStatus } from '../store/slices/socketSlice';
-import apiService from '../services/apiService';
-import socketService from '../services/socketService';
-import { getTabId } from '../utils/localStorage';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setPollData } from "../store/slices/pollSlice";
+import apiService from "../services/apiService";
+import socketService from "../services/socketService";
+import { getTabId } from "../utils/localStorage";
+import "./style/HomePage.css";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [isCreating, setIsCreating] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
-  const [joinData, setJoinData] = useState({ pollId: '', studentName: '' });
-  const [error, setError] = useState('');
+
+  const [selectedRole, setSelectedRole] = useState(null); // "student" | "teacher"
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleCreatePoll = async () => {
     try {
-     
-      setIsCreating(true);
-      setError('');
-      
-      const { pollId, teacherId } = await apiService.createPoll();
-      
-      dispatch(setPollData({
-        pollId,
-        teacherId,
-        userType: 'teacher',
-        tabId: getTabId()
-      }));
-      
-      // Connect to socket
-      socketService.connect();
-      socketService.joinPoll(pollId, 'teacher');
-      
-      navigate(`/teacher/${pollId}`);
-    } catch (error) {
-      setError('Failed to create poll. Please try again.');
-      console.error('Error creating poll:', error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
+      setLoading(true);
+      setError("");
 
-  const handleJoinPoll = async (e) => {
-    e.preventDefault();
-    
-    if (!joinData.pollId.trim() || !joinData.studentName.trim()) {
-      setError('Please enter both poll ID and your name');
-      return;
-    }
+      const { teacherId } = await apiService.createPoll();
 
-    try {
-      setIsJoining(true);
-      setError('');
-      
-      const tabId = getTabId();
-      const { studentId } = await apiService.joinPoll(
-        joinData.pollId.trim(),
-        joinData.studentName.trim(),
-        tabId
+      dispatch(
+        setPollData({
+          teacherId,
+          userType: "teacher",
+          tabId: getTabId(),
+        })
       );
       
-      dispatch(setPollData({
-        pollId: joinData.pollId.trim(),
-        studentId,
-        studentName: joinData.studentName.trim(),
-        userType: 'student',
-        tabId
-      }));
-      
-      // Connect to socket
       socketService.connect();
-      socketService.joinPoll(joinData.pollId.trim(), 'student', studentId);
-      
-      navigate(`/student/${joinData.pollId.trim()}`);
-    } catch (error) {
-      setError(error.message || 'Failed to join poll. Please check the poll ID and try again.');
-      console.error('Error joining poll:', error);
+      socketService.joinPoll("teacher");
+      navigate(`/teacher`); 
+    } catch (e) {
+      console.error(e);
+      setError("Failed to create poll. Please try again.");
     } finally {
-      setIsJoining(false);
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setJoinData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setError('');
+  const handleContinue = () => {
+    if (!selectedRole || loading) return;
+    if (selectedRole === "teacher") {
+      handleCreatePoll();
+    } else {
+      // Student path – go to your join screen (enter Poll ID + Name)
+      navigate("/student/joinpoll");
+    }
   };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>InterVue2</h1>
-        <p>Real-time Polling for Teachers and Students</p>
+    <main className="lp-root">
+      {/* Top badge */}
+      <div className="lp-badge" role="status" aria-label="Intervue Poll">
+        <svg
+          className="lp-badge-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 2l1.6 3.9L18 7.4l-3 3 0.7 4.2L12 12.8 8.3 14.6 9 10.4 6 7.4l4.4-1.5L12 2z"
+            fill="white"
+          />
+        </svg>
+        <span>Intervue Poll</span>
       </div>
 
-      <div className="persona-selector">
-        <div className="persona-card" onClick={handleCreatePoll}>
-          <div className="persona-icon teacher-icon">👨‍🏫</div>
-          <h2>Teacher</h2>
-          <p>Create polls, ask questions, and view live results from your students</p>
-          <button 
-            className="btn" 
-            disabled={isCreating}
-            onClick={handleCreatePoll}
-          >
-            {isCreating ? 'Creating...' : 'Create New Poll'}
-          </button>
-        </div>
+      {/* Heading */}
+      <section className="lp-head">
+        <h1 className="lp-title">
+          Welcome to the <span className="lp-title-strong">Live Polling System</span>
+        </h1>
+        <p className="lp-subtitle">
+          Please select the role that best describes you to begin using the live polling
+          system
+        </p>
+      </section>
 
-        <div className="persona-card">
-          <div className="persona-icon student-icon">👨‍🎓</div>
-          <h2>Student</h2>
-          <p>Join a poll with your name and answer questions in real-time</p>
-          <form onSubmit={handleJoinPoll}>
-            <div className="form-group">
-              <input
-                type="text"
-                name="pollId"
-                placeholder="Enter Poll ID"
-                value={joinData.pollId}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isJoining}
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                name="studentName"
-                placeholder="Enter Your Name"
-                value={joinData.studentName}
-                onChange={handleInputChange}
-                className="form-control"
-                disabled={isJoining}
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="btn btn-success"
-              disabled={isJoining}
-            >
-              {isJoining ? 'Joining...' : 'Join Poll'}
-            </button>
-          </form>
-        </div>
+      {/* Cards */}
+      <section className="lp-cards" role="listbox" aria-label="Choose your role">
+        <button
+          type="button"
+          role="option"
+          aria-selected={selectedRole === "student"}
+          onClick={() =>  setSelectedRole("student")}
+          className={`lp-card lp-card--outlined ${selectedRole === "student" ? "is-selected" : ""}`}
+        >
+          <h3 className="lp-card-title">I’m a Student</h3>
+          <p className="lp-card-desc">
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry
+          </p>
+        </button>
+
+        <button
+          type="button"
+          role="option"
+          aria-selected={selectedRole === "teacher"}
+          onClick={() => setSelectedRole("teacher")}
+          className={`lp-card lp-card--outlined ${
+            selectedRole === "teacher" ? "is-selected" : ""
+          }`}
+        >
+          <h3 className="lp-card-title">I’m a Teacher</h3>
+          <p className="lp-card-desc">
+            Submit answers and view live poll results in real-time.
+          </p>
+        </button>
+      </section>
+
+      {/* Continue */}
+      <div className="lp-cta-wrap">
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={!selectedRole || loading}
+          className="lp-cta"
+        >
+          {loading ? "Please wait…" : "Continue"}
+        </button>
       </div>
 
-      {error && (
-        <div className="error">
-          {error}
-        </div>
-      )}
-    </div>
+      {error ? <div className="lp-error">{error}</div> : null}
+    </main>
   );
 };
 

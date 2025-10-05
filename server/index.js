@@ -1,41 +1,45 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const cors = require("cors");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? false : "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+    origin:
+      process.env.NODE_ENV === "production" ? false : "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
 });
 
 app.use(cors());
 app.use(express.json());
 
 // Serve static files from the React app build directory
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
 }
 
-// In-memory store for active polls
-const polls = new Map();
-const pollTimers = new Map();
+/** ---------------- Keys & Single Room ---------------- **/
+const ROOM_KEY = process.env.ROOM_KEY || "default-room"; //
+/** ---------------- Single-poll storage ---------------- **/
+let poll = null; // holds the single Poll instance (or null if none created)
+let pollTimer = null; // holds the single timer (or null if none running)
 
-// Data models
+/** ---------------- Data models ---------------- **/
 class Poll {
-  constructor(id, teacherId) {
-    this.id = id;
+  constructor(teacherId) {
+    this.id = uuidv4(); // internal id (not exposed/required by clients)
     this.teacherId = teacherId;
     this.students = new Map(); // studentId -> { name, tabId, hasAnswered }
     this.currentQuestion = null;
+   
     this.questions = [];
     this.results = new Map(); // questionId -> { answers: Map, totalAnswers: number }
-    this.status = 'waiting'; // waiting, active, completed
+    this.status = "waiting"; // waiting, active, completed
     this.createdAt = new Date();
   }
 
@@ -52,15 +56,17 @@ class Poll {
 
   submitAnswer(studentId, questionId, answer) {
     if (!this.results.has(questionId)) return false;
-    
+
     const student = this.students.get(studentId);
     if (!student) return false;
 
     const result = this.results.get(questionId);
+    if (result.answers.has(studentId)) return false; // prevent double answers
+
     result.answers.set(studentId, answer);
     result.totalAnswers++;
     student.hasAnswered = true;
-    
+
     return true;
   }
 
@@ -76,7 +82,7 @@ class Poll {
     if (!result) return null;
 
     const answerCounts = {};
-    result.answers.forEach(answer => {
+    result.answers.forEach((answer) => {
       answerCounts[answer] = (answerCounts[answer] || 0) + 1;
     });
 
@@ -85,181 +91,211 @@ class Poll {
       totalAnswers: result.totalAnswers,
       totalStudents: this.students.size,
       answerCounts,
-      studentAnswers: Array.from(result.answers.entries()).map(([studentId, answer]) => ({
-        studentId,
-        studentName: this.students.get(studentId)?.name,
-        answer
-      }))
+      studentAnswers: Array.from(result.answers.entries()).map(
+        ([studentId, answer]) => ({
+          studentId,
+          studentName: this.students.get(studentId)?.name,
+          answer,
+        })
+      ),
     };
   }
 }
 
-// REST API Routes
-app.post('/api/polls', (req, res) => {
-  const pollId = uuidv4();
+/** ---------------- REST API Routes (no ) ---------------- **/
+
+// Create (or reset) the single poll
+app.post("/api/poll", (req, res) => {
   const teacherId = uuidv4();
-  const poll = new Poll(pollId, teacherId);
-  polls.set(pollId, poll);
-  
-  res.json({ pollId, teacherId });
+  poll = new Poll(teacherId);
+
+  // Clear any stray timer when creating a fresh poll
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+
+  res.json({
+    teacherId,
+  });
 });
 
-app.get('/api/polls/:pollId', (req, res) => {
-  const poll = polls.get(req.params.pollId);
+// Get current poll
+app.get("/api/poll", (req, res) => {
   if (!poll) {
-    return res.status(404).json({ error: 'Poll not found' });
+    return res.status(404).json({ error: "Poll not created yet" });
   }
-  
+
   res.json({
     id: poll.id,
     status: poll.status,
     students: Array.from(poll.students.values()),
     currentQuestion: poll.currentQuestion,
-    questions: poll.questions
+    questions: poll.questions,
   });
 });
 
-app.post('/api/polls/:pollId/join', (req, res) => {
-  const { name, tabId } = req.body;
-  const poll = polls.get(req.params.pollId);
-  
+// Student Join (requires secret room key)
+app.post("/api/poll/join", (req, res) => {
   if (!poll) {
-    return res.status(404).json({ error: 'Poll not found' });
+    return res.status(404).json({ error: "Poll not created yet" });
   }
 
-  // Check if tabId already exists
-  const existingStudent = Array.from(poll.students.values()).find(s => s.tabId === tabId);
+  const { name, tabId } = req.body;
+  if (!name || !tabId) {
+    return res
+      .status(400)
+      .json({ error: "name, tabId and secretKey are required" });
+  }
+
+  // Prevent same tab joining twice
+  const existingStudent = Array.from(poll.students.values()).find(
+    (s) => s.tabId === tabId
+  );
   if (existingStudent) {
-    return res.status(400).json({ error: 'This tab is already connected to the poll' });
+    return res
+      .status(400)
+      .json({ error: "This tab is already connected to the poll" });
   }
 
   const studentId = uuidv4();
   poll.addStudent(studentId, name, tabId);
-  
   res.json({ studentId });
 });
 
-app.post('/api/polls/:pollId/questions', (req, res) => {
-  const { question, options, teacherId } = req.body;
-  const poll = polls.get(req.params.pollId);
-  
+// Teacher adds a question (requires teacherKey)
+app.post("/api/poll/questions", (req, res) => {
   if (!poll) {
-    return res.status(404).json({ error: 'Poll not found' });
+    return res.status(404).json({ error: "Poll not created yet" });
   }
 
-  if (poll.teacherId !== teacherId) {
-    return res.status(403).json({ error: 'Unauthorized' });
+  const { question, options, timerSec } = req.body;
+
+  if (!question || !Array.isArray(options) || options.length === 0) {
+    return res.status(400).json({ error: "Invalid question payload" });
   }
 
-  if (poll.status === 'active' && !poll.canProceedToNext()) {
-    return res.status(400).json({ error: 'Cannot add new question until current question is answered by all students' });
+  if (poll.status === "active" && !poll.canProceedToNext()) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Cannot add new question until current question is answered by all students",
+      });
   }
-
+  
   const questionId = poll.addQuestion({ question, options });
-  poll.currentQuestion = { id: questionId, question, options };
-  poll.status = 'active';
+  const optiontexts= options.map(opt=>opt.text);
+  poll.currentQuestion = { id: questionId, question, optiontexts };
+  poll.status = "active";
 
   // Clear previous timer
-  if (pollTimers.has(req.params.pollId)) {
-    clearTimeout(pollTimers.get(req.params.pollId));
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
   }
 
   // Set 60-second timer
-  const timer = setTimeout(() => {
-    const currentPoll = polls.get(req.params.pollId);
-    if (currentPoll && currentPoll.status === 'active') {
-      io.to(req.params.pollId).emit('questionTimeUp', {
-        questionId: currentPoll.currentQuestion.id,
-        results: currentPoll.getQuestionResults(currentPoll.currentQuestion.id)
+  pollTimer = setTimeout(() => {
+    if (
+      poll &&
+      poll.status === "active" &&
+      poll.currentQuestion?.id === questionId
+    ) {
+      io.to(ROOM_KEY).emit("questionTimeUp", {
+        questionId: poll.currentQuestion.id,
+        results: poll.getQuestionResults(poll.currentQuestion.id),
       });
-      currentPoll.status = 'waiting';
-      currentPoll.currentQuestion = null;
+      poll.status = "waiting";
+      poll.currentQuestion = null;
     }
-    pollTimers.delete(req.params.pollId);
-  }, 60000);
+    pollTimer = null;
+  }, timerSec * 1000);
 
-  pollTimers.set(req.params.pollId, timer);
-
-  // Broadcast new question to all students in the poll
-  io.to(req.params.pollId).emit('newQuestion', {
-    questionId,
-    question,
-    options,
-    timeLimit: 60
+  // Broadcast new question to all students in the room
+  io.to(ROOM_KEY).emit("newQuestion", {
+    ...poll.currentQuestion,
+    timeLimit: timerSec,
   });
 
   res.json({ questionId });
 });
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+/** ---------------- Socket.io (no ) ---------------- **/
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
-  socket.on('joinPoll', ({ pollId, userType, studentId }) => {
-    socket.join(pollId);
-    
-    if (userType === 'student') {
-      socket.emit('pollJoined', { pollId, studentId });
-    } else if (userType === 'teacher') {
-      socket.emit('pollJoined', { pollId });
-    }
+  // Clients must provide the room secret to join the room
+  socket.on("joinPoll", ({ userType, studentId, name }) => {
+    socket.join(ROOM_KEY);
+
+    // Notify the newly joined user only
+    socket.emit("pollJoined", {
+      userType,
+      ...(userType === "student" ? { studentId, name } : {}),
+    });
+
+    // Broadcast to all others in the room that a user has joined
+    io.to(ROOM_KEY).emit("userJoined", {
+      userType,
+      name: name || "Unknown",
+      id: studentId || socket.id, // fallback to socket.id if studentId is undefined
+      students: poll.students || null,
+    });
+
+    console.log(`${userType} joined: ${name} (${studentId || socket.id})`);
   });
 
-  socket.on('submitAnswer', ({ pollId, studentId, questionId, answer }) => {
-    const poll = polls.get(pollId);
+  socket.on("submitAnswer", ({ studentId, questionId, answer }) => {
     if (!poll) return;
 
     const success = poll.submitAnswer(studentId, questionId, answer);
     if (success) {
-      // Broadcast updated results to teacher
       const results = poll.getQuestionResults(questionId);
-      io.to(pollId).emit('answerSubmitted', {
+      io.to(ROOM_KEY).emit("answerSubmitted", {
         questionId,
         results,
         studentId,
-        studentName: poll.students.get(studentId)?.name
+        studentName: poll.students.get(studentId)?.name,
       });
 
-      // Check if all students have answered
       if (poll.canProceedToNext()) {
-        io.to(pollId).emit('allStudentsAnswered', {
+        io.to(ROOM_KEY).emit("allStudentsAnswered", {
           questionId,
-          results
+          results,
         });
-        poll.status = 'waiting';
+        poll.status = "waiting";
         poll.currentQuestion = null;
-        
-        // Clear timer
-        if (pollTimers.has(pollId)) {
-          clearTimeout(pollTimers.get(pollId));
-          pollTimers.delete(pollId);
+
+        if (pollTimer) {
+          clearTimeout(pollTimer);
+          pollTimer = null;
         }
       }
     }
   });
 
-  socket.on('requestResults', ({ pollId, questionId }) => {
-    const poll = polls.get(pollId);
+  socket.on("requestResults", ({ questionId }) => {
     if (!poll) return;
-
     const results = poll.getQuestionResults(questionId);
-    socket.emit('questionResults', results);
+    socket.emit("questionResults", results);
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
   });
 });
 
-// Handle React routing, return all requests to React app
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+/** ---------------- React fallback ---------------- **/
+if (process.env.NODE_ENV === "production") {
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
   });
 }
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`ROOM_KEY: ${ROOM_KEY} (share with students)`);
 });

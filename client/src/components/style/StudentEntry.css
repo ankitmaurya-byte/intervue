@@ -1,0 +1,109 @@
+/* Container */
+.student-container {
+  min-height: 100vh;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Badge */
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 1rem;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #7565D9, #4D0ACD);
+  border-radius: 9999px;
+  margin-bottom: 1.5rem;
+}
+
+.badge-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.badge-text {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Heading */
+.heading {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.heading h1 {
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.heading .bold {
+  font-weight: 700;
+}
+
+.heading p {
+  margin-top: 0.5rem;
+  color: #4B5563;
+  font-size: 1rem;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.highlight {
+  font-weight: 600;
+}
+
+/* Input Section */
+.input-section {
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.input-section label {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #000;
+}
+
+.input-section input {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  background-color: #F2F2F2;
+  color: #000;
+  border: none;
+  font-size: 1rem;
+}
+
+.input-section input::placeholder {
+  color: #6B7280;
+}
+
+/* Button */
+.continue-btn {
+  margin-top: 2.5rem;
+  padding: 1rem 3rem;
+  background: linear-gradient(to right, #8F64E1, #1D68BD);
+  border: none;
+  border-radius: 9999px;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.3s ease;
+}
+
+.continue-btn:hover {
+  opacity: 0.9;
+}

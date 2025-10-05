@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import { store } from '../store/store';
-import { setSocket, setConnectionStatus, setRoom } from '../store/slices/socketSlice';
+import {  setConnectionStatus, setSocket } from '../store/slices/socketSlice';
 import {
   setPollStatus,
   setStudents,
@@ -25,7 +25,7 @@ class SocketService {
     
     this.socket.on('connect', () => {
       console.log('Connected to server');
-      store.dispatch(setSocket(this.socket));
+      
       store.dispatch(setConnectionStatus(true));
     });
 
@@ -33,10 +33,14 @@ class SocketService {
       console.log('Disconnected from server');
       store.dispatch(setConnectionStatus(false));
     });
+    this.socket.on('userJoined', (userType,name,id,students) => {
+      console.log('User joined:', { userType, name, id, students });
+      store.dispatch(setStudents(students));
+    });
 
     this.socket.on('pollJoined', (data) => {
       console.log('Joined poll:', data);
-      store.dispatch(setRoom(data.pollId));
+      store.dispatch(setSocket(data));
     });
 
     this.socket.on('newQuestion', (data) => {
@@ -75,30 +79,30 @@ class SocketService {
     return this.socket;
   }
 
-  joinPoll(pollId, userType, studentId = null) {
+  joinPoll( userType, studentId = null,name) {
     if (!this.socket) {
       this.connect();
     }
     
-    this.socket.emit('joinPoll', { pollId, userType, studentId });
+    this.socket.emit('joinPoll', { userType, studentId,name });
   }
 
-  submitAnswer(pollId, studentId, questionId, answer) {
+  submitAnswer( studentId, questionId, answer) {
     if (!this.socket) {
       console.error('Socket not connected');
       return;
     }
     
-    this.socket.emit('submitAnswer', { pollId, studentId, questionId, answer });
+    this.socket.emit('submitAnswer', {  studentId, questionId, answer });
   }
 
-  requestResults(pollId, questionId) {
+  requestResults(questionId) {
     if (!this.socket) {
       console.error('Socket not connected');
       return;
     }
     
-    this.socket.emit('requestResults', { pollId, questionId });
+    this.socket.emit('requestResults', {  questionId });
   }
 
   startTimer(seconds) {
@@ -119,7 +123,7 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
       store.dispatch(setConnectionStatus(false));
-      store.dispatch(setRoom(null));
+     
     }
   }
 }
