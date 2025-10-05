@@ -186,7 +186,7 @@ app.post("/api/poll/questions", (req, res) => {
   
   const questionId = poll.addQuestion({ question, options });
   const optiontexts= options.map(opt=>opt.text);
-  poll.currentQuestion = { id: questionId, question, optiontexts };
+  poll.currentQuestion = { id: questionId, question, options:optiontexts };
   poll.status = "active";
 
   // Clear previous timer
@@ -240,7 +240,7 @@ io.on("connection", (socket) => {
       userType,
       name: name || "Unknown",
       id: studentId || socket.id, // fallback to socket.id if studentId is undefined
-      students: poll.students || null,
+      students: Array.from(poll.students.values()) || [],
     });
 
     console.log(`${userType} joined: ${name} (${studentId || socket.id})`);

@@ -33,7 +33,8 @@ class SocketService {
       console.log('Disconnected from server');
       store.dispatch(setConnectionStatus(false));
     });
-    this.socket.on('userJoined', (userType,name,id,students) => {
+
+    this.socket.on('userJoined', ({userType,name,id,students}) => {
       console.log('User joined:', { userType, name, id, students });
       store.dispatch(setStudents(students));
     });
