@@ -273,6 +273,7 @@ io.on("connection", (socket) => {
         }
       }
     }
+    
   });
 
   socket.on("requestResults", ({ questionId }) => {

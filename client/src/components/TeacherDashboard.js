@@ -167,7 +167,6 @@ const TeacherDashboard = () => {
     (status === "active" &&
       results &&
       results.totalAnswers === students.length);
-
   return (
     <div className="td-wrap">
       {/* Top bar: badge + heading + view history */}
@@ -188,12 +187,13 @@ const TeacherDashboard = () => {
           <span>Intervue Poll</span>
         </div>
 
-        <button type="button" className="td-history-btn">
-          <span className="td-eye" aria-hidden>
-            👁️
-          </span>{" "}
-          View Poll history
-        </button>
+<button
+  type="button"
+  className="td-history-btn"
+  onClick={() => navigate('/poll/history')}
+>
+  <span className="td-eye" aria-hidden>👁️</span> View Poll history
+</button>
       </div>
 
       <div className="td-hero">
@@ -315,7 +315,7 @@ const TeacherDashboard = () => {
       </form>
 
       {/* Results Panel (matches second screen) */}
-      {currentQuestion && results && (
+      {currentQuestion  && (
         <>
           <h2 className="td-section-title">Question</h2>
 

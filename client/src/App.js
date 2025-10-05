@@ -5,6 +5,7 @@ import StudentDashboard from './components/StudentDashboard';
 import HomePage from './components/HomePage';
 import './App.css';
 import StudentEntry from './components/StudentEntry';
+import PollHistory from './components/PollHistory';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/teacher/" element={<TeacherDashboard />} />
         <Route path="/student/joinpoll" element={<StudentEntry />} />
         <Route path="/student/" element={<StudentDashboard />} />
+        <Route path="/poll/history" element={<PollHistory />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
