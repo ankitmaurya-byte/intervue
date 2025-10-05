@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setPollData } from "../store/slices/pollSlice";
@@ -6,7 +6,7 @@ import apiService from "../services/apiService";
 import socketService from "../services/socketService";
 import { getTabId } from "../utils/localStorage";
 import "./style/HomePage.css";
-import { isTabBanned } from "../utils/banUtils";
+import { isTabBanned, isTabBannedServer } from "../utils/banUtils";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -14,17 +14,21 @@ const HomePage = () => {
   const [selectedRole, setSelectedRole] = useState(null); // "student" | "teacher"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+useEffect(() => {
+  const checkBan = async () => {
+    const { banned } = await isTabBannedServer();
+    if (banned) {
+      navigate('/kicked');
+    }
+  };
 
-  if (isTabBanned()) {
-    navigate("/kicked");
-    return null;
-  }
-
+  checkBan();
+}, []);
   const handleCreatePoll = async () => {
     try {
+     
       setLoading(true);
       setError("");
-
       const { teacherId } = await apiService.createPoll();
 
       dispatch(

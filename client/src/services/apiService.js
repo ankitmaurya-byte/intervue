@@ -45,7 +45,13 @@ class ApiService {
       throw error;
     }
   }
-
+ async checkBan(tabId) {
+    const url = `${API_BASE_URL}/poll/ban/check?tabId=${encodeURIComponent(tabId)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Ban check failed");
+    return data; // { banned: boolean, bannedUntil: number|null }
+  }
   // Teacher adds a question (requires teacherId)
   async addQuestion(question, options,timerSec) {
     try {

@@ -1,14 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
-import apiService from '../services/apiService';
-import socketService from '../services/socketService';
-import './style/PollHistory.css';
+import React, { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
+import apiService from "../services/apiService";
+import socketService from "../services/socketService";
+import "./style/PollHistory.css";
+import { isTabBannedServer } from "../utils/banUtils";
+import { useNavigate } from "react-router-dom";
 
 const PollHistory = () => {
-  const { isConnected } = useSelector(s => s.poll);
-  const [questions, setQuestions] = useState([]);   // [{id, question, options}]
+  const { isConnected } = useSelector((s) => s.poll);
+  const [questions, setQuestions] = useState([]); // [{id, question, options}]
   const [resultsMap, setResultsMap] = useState({}); // { [questionId]: results }
+  const navigate = useNavigate();
+  useEffect(() => {
+    const checkBan = async () => {
+      const { banned } = await isTabBannedServer();
+      if (banned) {
+        navigate("/kicked");
+      }
+    };
 
+    checkBan();
+  }, []);
   // Load all past questions
   useEffect(() => {
     let mounted = true;
@@ -27,30 +39,34 @@ const PollHistory = () => {
 
         const handler = (res) => {
           if (!res?.questionId) return;
-          setResultsMap(prev => ({ ...prev, [res.questionId]: res }));
+          setResultsMap((prev) => ({ ...prev, [res.questionId]: res }));
         };
 
-        socket.on('questionResults', handler);
+        socket.on("questionResults", handler);
 
         // request one by one
-        qs.forEach(q => socket.emit('requestResults', { questionId: q.id }));
+        qs.forEach((q) => socket.emit("requestResults", { questionId: q.id }));
 
         return () => {
-          socket.off('questionResults', handler);
+          socket.off("questionResults", handler);
         };
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.error('Failed to load history:', e);
+        console.error("Failed to load history:", e);
       }
     };
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
     <div className="ph-wrap">
-      <h1 className="ph-title">View <span className="bold">Poll History</span></h1>
+      <h1 className="ph-title">
+        View <span className="bold">Poll History</span>
+      </h1>
 
       {questions.map((q, idx) => {
         const res = resultsMap[q.id];
@@ -72,7 +88,10 @@ const PollHistory = () => {
               <div className="ph-body">
                 {q.options.map((opt, i) => (
                   <div key={i} className="ph-row">
-                    <div className="ph-fill" style={{ width: `${Math.max(pct[opt.text], 0)}%` }} />
+                    <div
+                      className="ph-fill"
+                      style={{ width: `${Math.max(pct[opt.text], 0)}%` }}
+                    />
                     <span className="ph-chip">{i + 1}</span>
                     <span className="ph-text">{opt.text}</span>
                     <span className="ph-pct">{pct[opt.text]}%</span>
@@ -85,7 +104,9 @@ const PollHistory = () => {
       })}
 
       {/* Floating chat bubble to match mocks */}
-      <button className="ph-chat" aria-label="Open help chat">💬</button>
+      <button className="ph-chat" aria-label="Open help chat">
+        💬
+      </button>
     </div>
   );
 };

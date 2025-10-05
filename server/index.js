@@ -30,6 +30,33 @@ let poll = null; // holds the single Poll instance (or null if none created)
 let pollTimer = null; // holds the single timer (or null if none running)
 const studentIdToSocketId = new Map();
 const socketIdToStudentId = new Map();
+const bannedTabs = new Map(); // tabId -> expiryTs (ms)
+function addBan(tabId, minutes = 10) {
+    if (!tabId) return;
+    const expiresAt = Date.now() + minutes * 60 * 1000;
+    bannedTabs.set(tabId, expiresAt);
+  }
+
+ function isBanned(tabId) {
+    if (!tabId) return false;
+    const exp = bannedTabs.get(tabId);
+    if (!exp) return false;
+    if (Date.now() > exp) {
+      bannedTabs.delete(tabId);
+      return false;
+    }
+    return true;
+  }
+
+ function getBanExpiry(tabId) {
+    const exp = bannedTabs.get(tabId);
+    if (!exp) return null;
+    if (Date.now() > exp) {
+      bannedTabs.delete(tabId);
+      return null;
+    }
+    return exp;
+  }
 /** ---------------- Data models ---------------- **/
 class Poll {
   constructor(teacherId) {
@@ -54,7 +81,7 @@ class Poll {
     this.results.set(questionId, { answers: new Map(), totalAnswers: 0 });
     return questionId;
   }
-
+  
   submitAnswer(studentId, questionId, answer) {
     if (!this.results.has(questionId)) return false;
 
@@ -148,7 +175,12 @@ app.post("/api/poll/join", (req, res) => {
       .status(400)
       .json({ error: "name, tabId and secretKey are required" });
   }
-
+  if (isBanned(tabId)) {
+    return res.status(403).json({
+      error: "You are temporarily banned from joining.",
+      bannedUntil: getBanExpiry(tabId),
+    });
+  }
   // Prevent same tab joining twice
   const existingStudent = Array.from(poll.students.values()).find(
     (s) => s.tabId === tabId
@@ -218,6 +250,20 @@ app.post("/api/poll/questions", (req, res) => {
 
   res.json({ questionId });
 });
+app.get("/api/poll/ban/check", (req, res) => {
+  const { tabId } = req.query;
+  if (!tabId) {
+    return res.status(400).json({ error: "tabId is required" });
+  }
+
+  const expiry = getBanExpiry(tabId);
+
+  return res.json({
+    banned: !!expiry,
+    bannedUntil: expiry || null,
+  });
+});
+
 function broadcastStudents() {
   if (!poll) return;
   const students = Array.from(poll.students.entries()).map(([id, s]) => ({
@@ -269,35 +315,38 @@ io.on("connection", (socket) => {
   });
 
   // --- Kick a participant (teacher only) ---
-  socket.on("participant:kick", ({ studentId }) => {
-    if (!poll) return;
-   
+ socket.on("participant:kick", ({ studentId }) => {
+  if (!poll) return;
 
-    const student = poll.students.get(studentId);
-    if (!student) return;
+  const student = poll.students.get(studentId);
+  if (!student) return;
 
-    // remove from poll
-    poll.students.delete(studentId);
+  // 🚫 add tabId to server ban list for 10 minutes
+  addBan(student.tabId, 10);
 
-    // find socket and disconnect
-    const sid = studentIdToSocketId.get(studentId);
-    if (sid) {
-      io.to(sid).emit("forceDisconnect", {
-        reason: "You have been removed from the poll by the teacher.",
-      });
-      const s = io.sockets.sockets.get(sid);
-      if (s) s.leave(ROOM_KEY);
-      studentIdToSocketId.delete(studentId);
-      socketIdToStudentId.delete(sid);
-    }
+  // remove from poll
+  poll.students.delete(studentId);
 
-    // notify room (system message + updated list)
-    io.to(ROOM_KEY).emit("participantKicked", {
-      studentId,
-      name: student.name,
+  // find socket and disconnect
+  const sid = studentIdToSocketId.get(studentId);
+  if (sid) {
+    io.to(sid).emit("forceDisconnect", {
+      reason: "You have been removed from the poll by the teacher.",
     });
-    broadcastStudents();
+    const s = io.sockets.sockets.get(sid);
+    if (s) s.leave(ROOM_KEY);
+    studentIdToSocketId.delete(studentId);
+    socketIdToStudentId.delete(sid);
+  }
+
+  // notify room (system message + updated list)
+  io.to(ROOM_KEY).emit("participantKicked", {
+    studentId,
+    name: student.name,
   });
+  broadcastStudents();
+});
+
 
   socket.on("submitAnswer", ({ studentId, questionId, answer }) => {
     if (!poll) return;

@@ -1,44 +1,69 @@
-// utils/banUtils.js
+// src/utils/banUtils.js
+import apiService from '../services/apiService';
 
-// Get or create a unique tab ID
 export const getTabId = () => {
   let id = localStorage.getItem('tabId');
   if (!id) {
-    id = Math.random().toString(36).substr(2, 9);
+    id = Math.random().toString(36).slice(2, 11);
     localStorage.setItem('tabId', id);
   }
   return id;
 };
 
-// Add current tab to ban list for 10 minutes
-export const banTabId = () => {
-  const tabId = getTabId();
-  const banList = JSON.parse(localStorage.getItem('banList') || '{}');
-  banList[tabId] = Date.now() + 10 * 60 * 1000; // 10 minutes
-  localStorage.setItem('banList', JSON.stringify(banList));
-};
+// Optional local shadow (used as a fallback UX only)
+const LOCAL_KEY = 'banList';
 
-// Check if current tab is banned
-export const isTabBanned = () => {
-  const tabId = getTabId();
-  const banList = JSON.parse(localStorage.getItem('banList') || '{}');
-  const expiry = banList[tabId];
-
-  // Clean up expired bans
-  Object.keys(banList).forEach(id => {
-    if (Date.now() > banList[id]) {
-      delete banList[id];
+const cleanupLocal = (banList) => {
+  let changed = false;
+  Object.keys(banList).forEach((k) => {
+    if (Date.now() > banList[k]) {
+      delete banList[k];
+      changed = true;
     }
   });
-  localStorage.setItem('banList', JSON.stringify(banList));
-
-  return expiry && Date.now() < expiry;
+  if (changed) localStorage.setItem(LOCAL_KEY, JSON.stringify(banList));
 };
 
-// Optional: clear tab ID from ban (for testing)
-export const clearTabBan = () => {
+// Ban current tab locally (UX hint; server is the source of truth)
+export const banTabLocally = (minutes = 10) => {
   const tabId = getTabId();
-  const banList = JSON.parse(localStorage.getItem('banList') || '{}');
-  delete banList[tabId];
-  localStorage.setItem('banList', JSON.stringify(banList));
+  const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  list[tabId] = Date.now() + minutes * 60 * 1000;
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+};
+
+// 🔎 The only function you should use to check ban status
+export const isTabBannedServer = async () => {
+  const tabId = getTabId();
+
+  // Always ask the server
+  try {
+    const { banned, bannedUntil } = await apiService.checkBan(tabId);
+    if (banned && bannedUntil) {
+      // mirror locally (optional)
+      const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+      list[tabId] = bannedUntil;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+      return { banned: true, bannedUntil };
+    }
+    // cleanup local shadow
+    const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+    cleanupLocal(list);
+    return { banned: false, bannedUntil: null };
+  } catch (e) {
+    // On network error, fall back to local shadow (best effort)
+    const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+    cleanupLocal(list);
+    const exp = list[tabId];
+    if (exp && Date.now() < exp) return { banned: true, bannedUntil: exp };
+    return { banned: false, bannedUntil: null };
+  }
+};
+
+// For tests/dev
+export const clearLocalBan = () => {
+  const tabId = getTabId();
+  const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  delete list[tabId];
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
 };
