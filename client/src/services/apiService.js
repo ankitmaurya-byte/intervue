@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:5000/api";
+const API_BASE_URL = "https://intervue-be.vercel.app/api/";
 
 class ApiService {
   // Create (or reset) the single poll

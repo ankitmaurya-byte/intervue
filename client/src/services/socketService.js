@@ -20,10 +20,7 @@ class SocketService {
       return this.socket;
     }
 
-    const socketUrl =
-      process.env.NODE_ENV === "production"
-        ? window.location.origin
-        : "http://localhost:5000";
+    const socketUrl = "https://intervue-be.vercel.app";
     this.socket = io(socketUrl);
 
     this.socket.on("connect", () => {

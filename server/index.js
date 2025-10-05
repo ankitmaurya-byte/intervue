@@ -8,11 +8,10 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: {
-    origin:
-      process.env.NODE_ENV === "production" ? false : "http://localhost:3000",
-    methods: ["GET", "POST"],
-  },
+ cors: {
+  origin: "*",
+  methods: ["GET", "POST"],
+ },
 });
 
 app.use(cors());
