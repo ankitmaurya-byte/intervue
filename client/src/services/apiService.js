@@ -1,10 +1,10 @@
-const API_BASE_URL = "https://intervue-be.vercel.app/api";
+const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:5000";
 
 class ApiService {
   // Create (or reset) the single poll
   async createPoll() {
     try {
-      const response = await fetch(`${API_BASE_URL}/poll`, {
+      const response = await fetch(`${API_BASE_URL}/api/poll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -19,7 +19,7 @@ class ApiService {
   // Get current poll state
   async getPoll() {
     try {
-      const response = await fetch(`${API_BASE_URL}/poll`, { method: "GET" });
+      const response = await fetch(`${API_BASE_URL}/api/poll`, { method: "GET" });
       if (!response.ok) throw new Error("Poll not found");
       return await response.json();
     } catch (error) {
@@ -31,7 +31,7 @@ class ApiService {
   // Student join (requires secretKey)
   async joinPoll(name, tabId, secretKey) {
     try {
-      const res = await fetch(`${API_BASE_URL}/poll/join`, {
+      const res = await fetch(`${API_BASE_URL}/api/poll/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, tabId, secretKey }),
@@ -45,7 +45,7 @@ class ApiService {
     }
   }
  async checkBan(tabId) {
-    const url = `${API_BASE_URL}/poll/ban/check?tabId=${encodeURIComponent(tabId)}`;
+    const url = `${API_BASE_URL}/api/poll/ban/check?tabId=${encodeURIComponent(tabId)}`;
     const res = await fetch(url);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Ban check failed");
@@ -54,7 +54,7 @@ class ApiService {
   // Teacher adds a question (requires teacherId)
   async addQuestion(question, options,timerSec) {
     try {
-      const response = await fetch(`${API_BASE_URL}/poll/questions`, {
+      const response = await fetch(`${API_BASE_URL}/api/poll/questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, options ,timerSec}),
