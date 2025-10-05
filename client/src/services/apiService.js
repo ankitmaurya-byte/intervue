@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://intervue-be.vercel.app/api/";
+const API_BASE_URL = "https://intervue-be.vercel.app/api";
 
 class ApiService {
   // Create (or reset) the single poll
