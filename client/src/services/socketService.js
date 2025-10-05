@@ -21,7 +21,12 @@ class SocketService {
     }
 
     const socketUrl = "https://intervue-be.vercel.app";
-    this.socket = io(socketUrl);
+    this.socket  = io(socketUrl, {
+    path: '/socket.io',
+    transports: ['polling'],
+    upgrade: false,
+    withCredentials: false,
+  });
 
     this.socket.on("connect", () => {
       console.log("Connected to server");
