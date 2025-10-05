@@ -1,6 +1,6 @@
-import { io } from 'socket.io-client';
-import { store } from '../store/store';
-import {  setConnectionStatus, setSocket } from '../store/slices/socketSlice';
+import { io } from "socket.io-client";
+import { store } from "../store/store";
+import { setConnectionStatus, setSocket } from "../store/slices/socketSlice";
 import {
   setPollStatus,
   setStudents,
@@ -8,7 +8,7 @@ import {
   setResults,
   updateTimer,
   setError,
-} from '../store/slices/pollSlice';
+} from "../store/slices/pollSlice";
 
 class SocketService {
   constructor() {
@@ -20,99 +20,110 @@ class SocketService {
       return this.socket;
     }
 
-    const socketUrl = process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5000';
+    const socketUrl =
+      process.env.NODE_ENV === "production"
+        ? window.location.origin
+        : "http://localhost:5000";
     this.socket = io(socketUrl);
-    
-    this.socket.on('connect', () => {
-      console.log('Connected to server');
-      
+
+    this.socket.on("connect", () => {
+      console.log("Connected to server");
+
       store.dispatch(setConnectionStatus(true));
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server');
+    this.socket.on("disconnect", () => {
+      console.log("Disconnected from server");
       store.dispatch(setConnectionStatus(false));
     });
 
-    this.socket.on('userJoined', ({userType,name,id,students}) => {
-      console.log('User joined:', { userType, name, id, students });
+    this.socket.on("userJoined", ({ userType, name, id, students }) => {
+      console.log("User joined:", { userType, name, id, students });
       store.dispatch(setStudents(students));
     });
 
-    this.socket.on('pollJoined', (data) => {
-      console.log('Joined poll:', data);
+    this.socket.on("pollJoined", (data) => {
+      console.log("Joined poll:", data);
       store.dispatch(setSocket(data));
     });
 
-    this.socket.on('newQuestion', (data) => {
-      console.log('New question received:', data);
+    this.socket.on("newQuestion", (data) => {
+      console.log("New question received:", data);
       store.dispatch(setCurrentQuestion(data));
-      store.dispatch(setPollStatus('active'));
+      store.dispatch(setPollStatus("active"));
       store.dispatch(updateTimer(data.timeLimit));
-      
+
       // Start countdown timer
       this.startTimer(data.timeLimit);
     });
 
-    this.socket.on('answerSubmitted', (data) => {
-      console.log('Answer submitted:', data);
+    this.socket.on("answerSubmitted", (data) => {
+      console.log("Answer submitted:", data);
       store.dispatch(setResults(data.results));
     });
 
-    this.socket.on('allStudentsAnswered', (data) => {
-      console.log('All students answered:', data);
+    this.socket.on("allStudentsAnswered", (data) => {
+      console.log("All students answered:", data);
       store.dispatch(setResults(data.results));
-      store.dispatch(setPollStatus('waiting'));
+      store.dispatch(setPollStatus("waiting"));
     });
 
-    this.socket.on('questionTimeUp', (data) => {
-      console.log('Question time up:', data);
+    this.socket.on("questionTimeUp", (data) => {
+      console.log("Question time up:", data);
       store.dispatch(setResults(data.results));
-      store.dispatch(setPollStatus('waiting'));
+      store.dispatch(setPollStatus("waiting"));
       store.dispatch(updateTimer(0));
     });
 
-    this.socket.on('questionResults', (data) => {
-      console.log('Question results:', data);
+    this.socket.on("questionResults", (data) => {
+      console.log("Question results:", data);
       store.dispatch(setResults(data));
     });
 
     return this.socket;
   }
 
-  joinPoll( userType, studentId = null,name) {
+  joinPoll(userType, studentId = null, name) {
     if (!this.socket) {
       this.connect();
     }
-    
-    this.socket.emit('joinPoll', { userType, studentId,name });
+
+    this.socket.emit("joinPoll", { userType, studentId, name });
+  }
+  sendChatMessage({ userId, userType, name, text }) {
+    const ts = Date.now();
+    this.socket.emit("chat:message", { userId, userType, name, text, ts });
   }
 
-  submitAnswer( studentId, questionId, answer) {
+  // kick student (teacher only)
+  kickStudent(studentId) {
+    this.socket.emit("participant:kick", { studentId });
+  }
+  submitAnswer(studentId, questionId, answer) {
     if (!this.socket) {
-      console.error('Socket not connected');
+      console.error("Socket not connected");
       return;
     }
-    
-    this.socket.emit('submitAnswer', {  studentId, questionId, answer });
+
+    this.socket.emit("submitAnswer", { studentId, questionId, answer });
   }
 
   requestResults(questionId) {
     if (!this.socket) {
-      console.error('Socket not connected');
+      console.error("Socket not connected");
       return;
     }
-    
-    this.socket.emit('requestResults', {  questionId });
+
+    this.socket.emit("requestResults", { questionId });
   }
 
   startTimer(seconds) {
     let timeLeft = seconds;
-    
+
     const timer = setInterval(() => {
       timeLeft--;
       store.dispatch(updateTimer(timeLeft));
-      
+
       if (timeLeft <= 0) {
         clearInterval(timer);
       }
@@ -124,7 +135,6 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
       store.dispatch(setConnectionStatus(false));
-     
     }
   }
 }

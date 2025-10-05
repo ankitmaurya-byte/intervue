@@ -11,6 +11,7 @@ import {
 } from '../store/slices/pollSlice';
 import socketService from '../services/socketService';
 import './style/StudentDashboard.css';
+import ChatWidget from './ChatWidget';
 
 const formatTime = (s) => {
   const mm = String(Math.floor(s / 60)).padStart(2, '0');
@@ -216,7 +217,11 @@ const StudentDashboard = () => {
       )}
 
       {/* Chat */}
-      <button className="sd-chat" aria-label="Help or chat">💬</button>
+    <ChatWidget
+  userType="student"
+  studentId={studentId}
+  name={studentName}
+/>
       {error && <div className="sd-error">{error}</div>}
 
       <div className="sd-leave">

@@ -12,6 +12,7 @@ import {
 import apiService from "../services/apiService";
 import socketService from "../services/socketService";
 import "./style/TeacherDashboard.css";
+import ChatWidget from "./ChatWidget";
 
 const TIMER_OPTS = [15, 30, 45, 60];
 
@@ -373,10 +374,11 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Floating chat bubble */}
-      <button className="td-chat" aria-label="Open help chat">
-        💬
-      </button>
-
+   <ChatWidget 
+  userType="teacher"
+  name="Teacher"
+    // or your TEACHER_KEY from store
+/>
       {error && <div className="td-error">{error}</div>}
     </div>
   );

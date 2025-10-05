@@ -6,6 +6,7 @@ import HomePage from './components/HomePage';
 import './App.css';
 import StudentEntry from './components/StudentEntry';
 import PollHistory from './components/PollHistory';
+import KickedOut from './components/KickedOut';
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
         <Route path="/student/" element={<StudentDashboard />} />
         <Route path="/poll/history" element={<PollHistory />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/kicked" element={<KickedOut />} />
+
       </Routes>
     </div>
   );

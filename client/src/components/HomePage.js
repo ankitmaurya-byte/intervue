@@ -6,14 +6,19 @@ import apiService from "../services/apiService";
 import socketService from "../services/socketService";
 import { getTabId } from "../utils/localStorage";
 import "./style/HomePage.css";
+import { isTabBanned } from "../utils/banUtils";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const [selectedRole, setSelectedRole] = useState(null); // "student" | "teacher"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  if (isTabBanned()) {
+    navigate("/kicked");
+    return null;
+  }
 
   const handleCreatePoll = async () => {
     try {
@@ -29,10 +34,10 @@ const HomePage = () => {
           tabId: getTabId(),
         })
       );
-      
+
       socketService.connect();
       socketService.joinPoll("teacher");
-      navigate(`/teacher`); 
+      navigate(`/teacher`);
     } catch (e) {
       console.error(e);
       setError("Failed to create poll. Please try again.");
@@ -74,26 +79,34 @@ const HomePage = () => {
       {/* Heading */}
       <section className="lp-head">
         <h1 className="lp-title">
-          Welcome to the <span className="lp-title-strong">Live Polling System</span>
+          Welcome to the{" "}
+          <span className="lp-title-strong">Live Polling System</span>
         </h1>
         <p className="lp-subtitle">
-          Please select the role that best describes you to begin using the live polling
-          system
+          Please select the role that best describes you to begin using the live
+          polling system
         </p>
       </section>
 
       {/* Cards */}
-      <section className="lp-cards" role="listbox" aria-label="Choose your role">
+      <section
+        className="lp-cards"
+        role="listbox"
+        aria-label="Choose your role"
+      >
         <button
           type="button"
           role="option"
           aria-selected={selectedRole === "student"}
-          onClick={() =>  setSelectedRole("student")}
-          className={`lp-card lp-card--outlined ${selectedRole === "student" ? "is-selected" : ""}`}
+          onClick={() => setSelectedRole("student")}
+          className={`lp-card lp-card--outlined ${
+            selectedRole === "student" ? "is-selected" : ""
+          }`}
         >
           <h3 className="lp-card-title">I’m a Student</h3>
           <p className="lp-card-desc">
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry
           </p>
         </button>
 

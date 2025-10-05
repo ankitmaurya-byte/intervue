@@ -28,7 +28,8 @@ const ROOM_KEY = process.env.ROOM_KEY || "default-room"; //
 /** ---------------- Single-poll storage ---------------- **/
 let poll = null; // holds the single Poll instance (or null if none created)
 let pollTimer = null; // holds the single timer (or null if none running)
-
+const studentIdToSocketId = new Map();
+const socketIdToStudentId = new Map();
 /** ---------------- Data models ---------------- **/
 class Poll {
   constructor(teacherId) {
@@ -36,7 +37,7 @@ class Poll {
     this.teacherId = teacherId;
     this.students = new Map(); // studentId -> { name, tabId, hasAnswered }
     this.currentQuestion = null;
-   
+
     this.questions = [];
     this.results = new Map(); // questionId -> { answers: Map, totalAnswers: number }
     this.status = "waiting"; // waiting, active, completed
@@ -163,7 +164,6 @@ app.post("/api/poll/join", (req, res) => {
   res.json({ studentId });
 });
 
-// Teacher adds a question (requires teacherKey)
 app.post("/api/poll/questions", (req, res) => {
   if (!poll) {
     return res.status(404).json({ error: "Poll not created yet" });
@@ -176,17 +176,15 @@ app.post("/api/poll/questions", (req, res) => {
   }
 
   if (poll.status === "active" && !poll.canProceedToNext()) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Cannot add new question until current question is answered by all students",
-      });
+    return res.status(400).json({
+      error:
+        "Cannot add new question until current question is answered by all students",
+    });
   }
-  
+
   const questionId = poll.addQuestion({ question, options });
-  const optiontexts= options.map(opt=>opt.text);
-  poll.currentQuestion = { id: questionId, question, options:optiontexts };
+  const optiontexts = options.map((opt) => opt.text);
+  poll.currentQuestion = { id: questionId, question, options: optiontexts };
   poll.status = "active";
 
   // Clear previous timer
@@ -220,30 +218,85 @@ app.post("/api/poll/questions", (req, res) => {
 
   res.json({ questionId });
 });
-
+function broadcastStudents() {
+  if (!poll) return;
+  const students = Array.from(poll.students.entries()).map(([id, s]) => ({
+    studentId: id,
+    name: s.name,
+  }));
+  io.to(ROOM_KEY).emit("participants:list", { students });
+}
 /** ---------------- Socket.io (no ) ---------------- **/
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // Clients must provide the room secret to join the room
   socket.on("joinPoll", ({ userType, studentId, name }) => {
+    if (!poll) return;
+
     socket.join(ROOM_KEY);
 
-    // Notify the newly joined user only
-    socket.emit("pollJoined", {
-      userType,
-      ...(userType === "student" ? { studentId, name } : {}),
-    });
+    // Map student socket for kicks, only for students having an id
+    if (userType === "student" && studentId) {
+      studentIdToSocketId.set(studentId, socket.id);
+      socketIdToStudentId.set(socket.id, studentId);
+    }
 
-    // Broadcast to all others in the room that a user has joined
+    // Acknowledge to the joiner
+    socket.emit("pollJoined", { userType, studentId, name });
+
+    // Broadcast joined event + updated participants list
+    const students = Array.from(poll.students.entries()).map(([id, s]) => ({
+      studentId: id,
+      name: s.name,
+    }));
+
     io.to(ROOM_KEY).emit("userJoined", {
       userType,
       name: name || "Unknown",
-      id: studentId || socket.id, // fallback to socket.id if studentId is undefined
-      students: Array.from(poll.students.values()) || [],
+      id: studentId || socket.id,
+      students,
     });
 
-    console.log(`${userType} joined: ${name} (${studentId || socket.id})`);
+    broadcastStudents();
+  });
+
+  // --- Chat message: relay to room ---
+  socket.on("chat:message", (payload) => {
+    // payload: { userId, userType, name, text, ts }
+    if (!payload || !payload.text) return;
+    io.to(ROOM_KEY).emit("chat:message", payload);
+  });
+
+  // --- Kick a participant (teacher only) ---
+  socket.on("participant:kick", ({ studentId }) => {
+    if (!poll) return;
+   
+
+    const student = poll.students.get(studentId);
+    if (!student) return;
+
+    // remove from poll
+    poll.students.delete(studentId);
+
+    // find socket and disconnect
+    const sid = studentIdToSocketId.get(studentId);
+    if (sid) {
+      io.to(sid).emit("forceDisconnect", {
+        reason: "You have been removed from the poll by the teacher.",
+      });
+      const s = io.sockets.sockets.get(sid);
+      if (s) s.leave(ROOM_KEY);
+      studentIdToSocketId.delete(studentId);
+      socketIdToStudentId.delete(sid);
+    }
+
+    // notify room (system message + updated list)
+    io.to(ROOM_KEY).emit("participantKicked", {
+      studentId,
+      name: student.name,
+    });
+    broadcastStudents();
   });
 
   socket.on("submitAnswer", ({ studentId, questionId, answer }) => {
@@ -273,7 +326,6 @@ io.on("connection", (socket) => {
         }
       }
     }
-    
   });
 
   socket.on("requestResults", ({ questionId }) => {
@@ -283,6 +335,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    // remove mapping if it was a student
+    const studentId = socketIdToStudentId.get(socket.id);
+    if (studentId) {
+      studentIdToSocketId.delete(studentId);
+      socketIdToStudentId.delete(socket.id);
+      // do NOT remove from poll.students on disconnect (tab refresh) unless you want to
+    }
     console.log("User disconnected:", socket.id);
   });
 });
