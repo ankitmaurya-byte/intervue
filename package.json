@@ -4,6 +4,7 @@
   "description": "Real-time polling app with teacher and student personas",
   "main": "server/index.js",
   "scripts": {
+      "postinstall": "npx npm install --prefix server && npx npm install --prefix client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
