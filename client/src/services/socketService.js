@@ -20,7 +20,7 @@ class SocketService {
       return this.socket;
     }
 
-    const socketUrl = process.env.BACKEND_URL || "http://localhost:5000/";
+    const socketUrl = process.env.BACKEND_URL || "https://intervue-be-hdhl.onrender.com/";
     this.socket  = io(socketUrl, {
     path: '/socket.io',
     transports: ['polling'],

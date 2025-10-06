@@ -231,7 +231,10 @@ const ChatWidget = ({ userType, studentId, name }) => {
                   {userType === "teacher" && (
                     <button
                       className="cw-kick"
-                      onClick={() => handleKick(s.studentId || s.id)}
+                      onClick={() => {
+                       console.log("Kicking student:",s);
+                        handleKick(s.studentId || s.id);
+                      }}
                     >
                       Kick out
                     </button>

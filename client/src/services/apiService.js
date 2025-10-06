@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.BACKEND_URL || "https://intervue-be-hdhl.onrender.com";
 
 class ApiService {
   // Create (or reset) the single poll
