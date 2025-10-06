@@ -1,5 +1,14 @@
+/* PollHistory.css */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap');
 
+:root{
+  --purple:#8F64E1;
+  --purple-dark:#6766D5;
+  --grad:linear-gradient(99.18deg, #8F64E1 -46.89%, #1D68BD 223.45%);
+  --border:rgba(141,141,141,0.19);
+}
+
+*{box-sizing:border-box}
 
 .ph-wrap{
   font-family:'Sora',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
@@ -8,103 +17,292 @@
   color:#000;
   max-width:1440px;
   margin:0 auto;
-  padding:64px 24px 120px;
+  padding:48px 80px 120px;
 }
 
 .ph-title{
-  font-size:40px;
-  line-height:50px;
-  margin:0 0 24px;
+  font-size:48px;
+  line-height:1.2;
+  margin:0 0 48px;
   font-weight:400;
 }
 .ph-title .bold{font-weight:800}
 
-.ph-block{margin:34px 0}
+.ph-block{
+  margin-bottom:48px;
+}
+
 .ph-qnum{
-  font-size:22px;
+  font-size:24px;
   font-weight:600;
-  margin:0 0 14px;
+  margin:0 0 16px;
+  color:#000;
 }
 
 .ph-card{
-  border:1px solid #AF8FF1;
-  border-radius:9px;
-  max-width:727px;
+  border:1px solid #8F64E1;
+  border-radius:12px;
+  max-width:1000px;
   overflow:hidden;
-}
-.ph-header{
-  height:50px;
-  display:flex; align-items:center;
-  padding:0 16px;
-  background:var(--grad);
-  color:#fff;
-  font-weight:600;
-  font-size:17px;
-  border-radius:10px 10px 0 0;
-}
-.ph-body{
-  padding:18px 16px;
-  display:flex;
-  flex-direction:column;
-  gap:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
 }
 
-/* result row */
+.ph-header{
+  height:60px;
+  display:flex; 
+  align-items:center;
+  padding:0 24px;
+  background:linear-gradient(90deg, #4A4A4A 0%, #6E6E6E 100%);
+  color:#fff;
+  font-weight:600;
+  font-size:18px;
+}
+
+.ph-body{
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  background:#fff;
+}
+
+/* Result row */
 .ph-row{
   position:relative;
   isolation:isolate;
-  display:flex; align-items:center;
-  height:55px;
-  padding:26px 23px;
-  border-radius:6px;
+  display:flex; 
+  align-items:center;
+  height:60px;
+  padding:0 20px;
+  border-radius:8px;
   background:#F7F7F7;
-  border:1px solid var(--border);
+  border:1px solid rgba(141,141,141,0.15);
   overflow:hidden;
 }
-.ph-row:first-child{
-  border:1.5px solid var(--purple);
-}
+
 .ph-fill{
-  position:absolute; left:0; top:0; bottom:0;
-  background:var(--purple-d);
-  border-radius:6px;
+  position:absolute; 
+  left:0; 
+  top:0; 
+  bottom:0;
+  background:#6766D5;
+  border-radius:8px;
   z-index:0;
+  transition: width 0.3s ease;
 }
+
 .ph-chip{
-  position:relative; z-index:1;
-  width:24px; height:24px; background:#fff; border-radius:22px;
-  display:flex; align-items:center; justify-content:center;
-  font-weight:600; font-size:11px; color:var(--purple-d);
+  position:relative; 
+  z-index:1;
+  width:28px; 
+  height:28px; 
+  background:#fff; 
+  border-radius:50%;
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+  font-weight:600; 
+  font-size:14px; 
+  color:#6766D5;
+  flex-shrink:0;
 }
+
 .ph-text{
-  position:relative; z-index:1;
-  font-weight:600; color:#FFFFFF; /* ensures white text over bar (as in mock) */
-  margin-left:10px;
+  position:relative; 
+  z-index:1;
+  font-weight:600; 
+  font-size:16px;
+  color:#fff;
+  margin-left:16px;
+  flex:1;
 }
+
 .ph-pct{
-  position:absolute; right:16px; top:50%; transform:translateY(-50%);
-  font-weight:600; font-size:16px; color:#000; z-index:2;
+  position:relative;
+  z-index:2;
+  font-weight:700; 
+  font-size:18px; 
+  color:#000;
+  flex-shrink:0;
+  margin-left:16px;
 }
 
 /* Floating chat bubble */
 .ph-chat{
-  position:fixed; right:24px; bottom:24px; width:76px; height:76px;
-  border-radius:50%; border:none; background:#5A66D1; color:#fff;
-  display:flex; align-items:center; justify-content:center;
-  font-size:28px; cursor:pointer;
-  box-shadow:0 10px 24px rgba(0,0,0,.12);
+  position:fixed; 
+  right:32px; 
+  bottom:32px; 
+  width:72px; 
+  height:72px;
+  border-radius:50%; 
+  border:none; 
+  background:#6766D5; 
+  color:#fff;
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+  font-size:32px; 
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(103,102,213,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Responsive */
+.ph-chat:hover{
+  transform: scale(1.05);
+  box-shadow:0 12px 32px rgba(103,102,213,0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px){
+  .ph-wrap{
+    padding:48px 60px 120px;
+  }
+}
+
 @media (max-width: 1024px){
-  .ph-card{max-width:100%}
+  .ph-wrap{
+    padding:40px 40px 120px;
+  }
+  
+  .ph-title{
+    font-size:42px;
+    margin-bottom:40px;
+  }
+  
+  .ph-card{
+    max-width:100%;
+  }
 }
+
 @media (max-width: 768px){
-  .ph-wrap{padding:32px 16px 100px}
-  .ph-title{font-size:32px; line-height:40px}
+  .ph-wrap{
+    padding:32px 24px 100px;
+  }
+  
+  .ph-title{
+    font-size:36px;
+    margin-bottom:32px;
+  }
+  
+  .ph-qnum{
+    font-size:20px;
+    margin-bottom:12px;
+  }
+  
+  .ph-header{
+    height:56px;
+    padding:0 20px;
+    font-size:16px;
+  }
+  
+  .ph-body{
+    padding:20px;
+    gap:14px;
+  }
+  
+  .ph-row{
+    height:56px;
+    padding:0 16px;
+  }
+  
+  .ph-chip{
+    width:26px;
+    height:26px;
+    font-size:13px;
+  }
+  
+  .ph-text{
+    font-size:15px;
+    margin-left:12px;
+  }
+  
+  .ph-pct{
+    font-size:16px;
+  }
+  
+  .ph-chat{
+    width:64px;
+    height:64px;
+    right:24px;
+    bottom:24px;
+    font-size:28px;
+  }
 }
+
 @media (max-width: 480px){
-  .ph-title{font-size:26px; line-height:32px}
-  .ph-qnum{font-size:18px}
-  .ph-header{font-size:15px}
+  .ph-wrap{
+    padding:24px 16px 100px;
+  }
+  
+  .ph-title{
+    font-size:28px;
+    margin-bottom:24px;
+  }
+  
+  .ph-block{
+    margin-bottom:32px;
+  }
+  
+  .ph-qnum{
+    font-size:18px;
+  }
+  
+  .ph-header{
+    height:52px;
+    padding:0 16px;
+    font-size:15px;
+  }
+  
+  .ph-body{
+    padding:16px;
+    gap:12px;
+  }
+  
+  .ph-row{
+    height:52px;
+    padding:0 12px;
+  }
+  
+  .ph-chip{
+    width:24px;
+    height:24px;
+    font-size:12px;
+  }
+  
+  .ph-text{
+    font-size:14px;
+    margin-left:10px;
+  }
+  
+  .ph-pct{
+    font-size:15px;
+    font-weight:600;
+  }
+  
+  .ph-chat{
+    width:56px;
+    height:56px;
+    right:16px;
+    bottom:16px;
+    font-size:24px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px){
+  .ph-title{
+    font-size:24px;
+  }
+  
+  .ph-qnum{
+    font-size:16px;
+  }
+  
+  .ph-text{
+    font-size:13px;
+  }
+  
+  .ph-pct{
+    font-size:14px;
+  }
 }

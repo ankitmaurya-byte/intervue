@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   path: '/socket.io',
   cors: {
-    origin: [process.env.FRONTEND_URL || "https://intervue-mocha.vercel.app"], // Your Vercel FE domain
+    origin: "*", // Your Vercel FE domain
     methods: ['GET', 'POST'],
     credentials: false,
   },

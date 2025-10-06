@@ -121,11 +121,12 @@ const TeacherDashboard = () => {
     );
   };
 
-  const submitQuestion = async (e) => {
+const submitQuestion = async (e) => {
     e.preventDefault();
 
     if (!question.trim()) {
       dispatch(setError("Please enter your question"));
+      setTimeout(() => dispatch(clearError()), 3000);
       return;
     }
     const cleanOptions = options
@@ -134,19 +135,15 @@ const TeacherDashboard = () => {
 
     if (cleanOptions.length < 2) {
       dispatch(setError("Please provide at least 2 options"));
+      setTimeout(() => dispatch(clearError()), 3000);
       return;
     }
 
     try {
       setIsSubmitting(true);
       dispatch(clearError());
-
-      // Server currently expects only option texts (no correctness); safe transform:
-      // const optionTexts = cleanOptions.map((o) => o.text);
-
-      // teacherId used as teacherKey (per your current store shape)
       
-      await apiService.addQuestion(question.trim(), cleanOptions,timerSec);
+      await apiService.addQuestion(question.trim(), cleanOptions, timerSec);
 
       // Reset form
       setQuestion("");
@@ -154,10 +151,12 @@ const TeacherDashboard = () => {
         { text: "", isCorrect: true },
         { text: "", isCorrect: false },
       ]);
+      setTimerSec(60);
 
       dispatch(setPollStatus("active"));
     } catch (err) {
       dispatch(setError(err?.message || "Failed to add question"));
+      setTimeout(() => dispatch(clearError()), 3000);
     } finally {
       setIsSubmitting(false);
     }

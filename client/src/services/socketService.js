@@ -20,7 +20,7 @@ class SocketService {
       return this.socket;
     }
 
-    const socketUrl = process.env.BACKEND_URL || "https://intervue-be.vercel.app";
+    const socketUrl = process.env.BACKEND_URL || "http://localhost:5000/";
     this.socket  = io(socketUrl, {
     path: '/socket.io',
     transports: ['polling'],

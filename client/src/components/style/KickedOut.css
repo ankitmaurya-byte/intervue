@@ -1,0 +1,195 @@
+/* KickedOut.css */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600&display=swap');
+
+.ko-wrap {
+  width: 100vw;
+  height: 100vh;
+  background: #FAFAFA;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  font-family: 'Sora', system-ui, -apple-system, sans-serif;
+  padding: 24px;
+}
+
+/* Badge */
+.ko-badge {
+  position: absolute;
+  top: 360px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 24px;
+  background: linear-gradient(90deg, #7565D9 0%, #5D4DC9 100%);
+  box-shadow: 0 4px 12px rgba(117, 101, 217, 0.25);
+}
+
+.ko-badge svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.ko-badge span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Content */
+.ko-content {
+  text-align: center;
+  max-width: 800px;
+  margin-top: 80px;
+  padding: 0 20px;
+}
+
+.ko-title {
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0 0 16px;
+  color: #000;
+}
+
+.ko-description {
+  font-size: 20px;
+  line-height: 1.4;
+  color: #909090;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .ko-badge {
+    top: 320px;
+  }
+
+  .ko-content {
+    margin-top: 60px;
+  }
+
+  .ko-title {
+    font-size: 42px;
+  }
+
+  .ko-description {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ko-badge {
+    top: 280px;
+    padding: 7px 14px;
+  }
+
+  .ko-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ko-badge span {
+    font-size: 13px;
+  }
+
+  .ko-content {
+    margin-top: 50px;
+    max-width: 600px;
+  }
+
+  .ko-title {
+    font-size: 36px;
+    margin-bottom: 14px;
+  }
+
+  .ko-description {
+    font-size: 18px;
+  }
+
+  .ko-description br {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ko-wrap {
+    padding: 20px;
+  }
+
+  .ko-badge {
+    top: 240px;
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .ko-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .ko-badge span {
+    font-size: 12px;
+  }
+
+  .ko-content {
+    margin-top: 40px;
+    max-width: 100%;
+    padding: 0 16px;
+  }
+
+  .ko-title {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .ko-description {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 360px) {
+  .ko-title {
+    font-size: 24px;
+  }
+
+  .ko-description {
+    font-size: 15px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+  .ko-badge {
+    top: 160px;
+    padding: 6px 12px;
+  }
+
+  .ko-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .ko-badge span {
+    font-size: 12px;
+  }
+
+  .ko-content {
+    margin-top: 30px;
+  }
+
+  .ko-title {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+
+  .ko-description {
+    font-size: 16px;
+  }
+}

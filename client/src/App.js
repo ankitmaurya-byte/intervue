@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import HomePage from './components/HomePage';
-import './App.css';
+// import './App.css';
 import StudentEntry from './components/StudentEntry';
 import PollHistory from './components/PollHistory';
 import KickedOut from './components/KickedOut';

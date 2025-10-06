@@ -10,12 +10,12 @@ import {
   clearError,
 } from '../store/slices/pollSlice';
 import socketService from '../services/socketService';
-import './style/StudentDashboard.css';
 import ChatWidget from './ChatWidget';
+import './style/StudentDashboard.css';
 
-const formatTime = (s) => {
-  const mm = String(Math.floor(s / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
+const formatTime = (seconds) => {
+  const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const ss = String(seconds % 60).padStart(2, '0');
   return `${mm}:${ss}`;
 };
 
@@ -37,6 +37,7 @@ const StudentDashboard = () => {
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false);
 
+  // Socket event handlers
   useEffect(() => {
     if (!studentId) {
       navigate('/');
@@ -46,7 +47,7 @@ const StudentDashboard = () => {
     const socket = socketService.socket || socketService.get?.();
     if (!socket) return;
 
-    const onNewQ = (data) => {
+    const onNewQuestion = (data) => {
       dispatch(setCurrentQuestion(data));
       dispatch(setPollStatus('active'));
       dispatch(updateTimer(data.timeLimit));
@@ -54,73 +55,83 @@ const StudentDashboard = () => {
       setHasAnswered(false);
       dispatch(clearError());
     };
-    const onAnswer = (data) => dispatch(setResults(data.results));
-    const onAll = (data) => {
+
+    const onAnswerSubmitted = (data) => {
+      dispatch(setResults(data.results));
+    };
+
+    const onAllStudentsAnswered = (data) => {
       dispatch(setResults(data.results));
       dispatch(setPollStatus('waiting'));
     };
-    const onTime = (data) => {
+
+    const onQuestionTimeUp = (data) => {
       dispatch(setResults(data.results));
       dispatch(setPollStatus('waiting'));
       dispatch(updateTimer(0));
     };
 
-    socket.on('newQuestion', onNewQ);
-    socket.on('answerSubmitted', onAnswer);
-    socket.on('allStudentsAnswered', onAll);
-    socket.on('questionTimeUp', onTime);
+    socket.on('newQuestion', onNewQuestion);
+    socket.on('answerSubmitted', onAnswerSubmitted);
+    socket.on('allStudentsAnswered', onAllStudentsAnswered);
+    socket.on('questionTimeUp', onQuestionTimeUp);
 
     return () => {
-      socket.off('newQuestion', onNewQ);
-      socket.off('answerSubmitted', onAnswer);
-      socket.off('allStudentsAnswered', onAll);
-      socket.off('questionTimeUp', onTime);
+      socket.off('newQuestion', onNewQuestion);
+      socket.off('answerSubmitted', onAnswerSubmitted);
+      socket.off('allStudentsAnswered', onAllStudentsAnswered);
+      socket.off('questionTimeUp', onQuestionTimeUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId]);
+  }, [studentId, navigate, dispatch]);
 
-  // countdown
+  // Countdown timer
   useEffect(() => {
     if (timer > 0 && status === 'active') {
-      const t = setInterval(() => dispatch(updateTimer(timer - 1)), 1000);
-      return () => clearInterval(t);
+      const interval = setInterval(() => {
+        dispatch(updateTimer(timer - 1));
+      }, 1000);
+      return () => clearInterval(interval);
     }
   }, [timer, status, dispatch]);
 
+  // Submit answer handler
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || hasAnswered || status !== 'active') return;
+    
     try {
       socketService.submitAnswer(studentId, currentQuestion.id, selectedAnswer);
       setHasAnswered(true);
       dispatch(clearError());
-    } catch (e) {
+    } catch (error) {
       dispatch(setError('Failed to submit answer'));
-      console.error(e);
+      console.error('Submit error:', error);
     }
   };
 
-  // percentages for results view
+  // Calculate percentages for results view
   const percentMap = useMemo(() => {
     if (!results || !results.totalAnswers) return {};
+    
     const total = results.totalAnswers || 1;
     const counts = results.answerCounts || {};
     const map = {};
+    
     Object.keys(counts).forEach((optText) => {
       map[optText] = Math.round((counts[optText] / total) * 100);
     });
+    
     return map;
   }, [results]);
 
-  const qNumber = 1; // change if you track index on the backend
-  const disabled = status !== 'active' || timer <= 0 || hasAnswered || !selectedAnswer;
+  const questionNumber = 1; // You can track this from backend if needed
+  const isDisabled = status !== 'active' || timer <= 0 || hasAnswered || !selectedAnswer;
 
   const showResults =
-    // show when user submitted OR time's up / teacher advanced
-    (!!results && (hasAnswered || status !== 'active')) &&
-    !!currentQuestion;
+    (!!results && (hasAnswered || status !== 'active')) && !!currentQuestion;
 
   return (
     <div className="sd-wrap">
+      {/* Status bar */}
       <div className="sd-top">
         <div className={`sd-dot ${isConnected ? 'ok' : 'bad'}`} />
         <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
@@ -128,7 +139,7 @@ const StudentDashboard = () => {
         <span className="sd-name">{studentName}</span>
       </div>
 
-      {/* Waiting initial */}
+      {/* Waiting for question */}
       {status === 'waiting' && !currentQuestion && (
         <div className="sd-wait">
           <h3>Waiting for the teacher to ask a question…</h3>
@@ -136,10 +147,10 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Header */}
+      {/* Question header */}
       {currentQuestion && (
         <div className="sd-headline">
-          <span className="sd-qtitle">Question {qNumber}</span>
+          <span className="sd-qtitle">Question {questionNumber}</span>
           <div className="sd-timer">
             <span className="sd-timer-icon" aria-hidden>⏱</span>
             <span className={`sd-timer-text ${timer <= 10 ? 'danger' : ''}`}>
@@ -149,7 +160,7 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* === Answering view === */}
+      {/* Answering view */}
       {currentQuestion && !showResults && (
         <>
           <div className="sd-card">
@@ -158,18 +169,22 @@ const StudentDashboard = () => {
             </div>
 
             <div className="sd-card-body">
-              {(currentQuestion.options || []).map((opt, idx) => {
-                const selected = selectedAnswer === opt;
+              {(currentQuestion.options || []).map((option, index) => {
+                const isSelected = selectedAnswer === option;
+                const isOptionDisabled = status !== 'active' || timer <= 0;
+                
                 return (
                   <button
-                    key={idx}
+                    key={index}
                     type="button"
-                    className={`sd-option ${selected ? 'selected' : ''}`}
-                    onClick={() => setSelectedAnswer(opt)}
-                    disabled={status !== 'active' || timer <= 0}
+                    className={`sd-option ${isSelected ? 'selected' : ''} ${
+                      isOptionDisabled ? 'disabled' : ''
+                    }`}
+                    onClick={() => !isOptionDisabled && setSelectedAnswer(option)}
+                    disabled={isOptionDisabled}
                   >
-                    <span className="sd-chip">{idx + 1}</span>
-                    <span className="sd-opt-text">{opt}</span>
+                    <span className="sd-chip">{index + 1}</span>
+                    <span className="sd-opt-text">{option}</span>
                   </button>
                 );
               })}
@@ -180,7 +195,7 @@ const StudentDashboard = () => {
             <button
               type="button"
               className="sd-submit"
-              disabled={disabled}
+              disabled={isDisabled}
               onClick={handleSubmitAnswer}
             >
               Submit
@@ -189,7 +204,7 @@ const StudentDashboard = () => {
         </>
       )}
 
-      {/* === Results view (after submit / time-up) === */}
+      {/* Results view */}
       {currentQuestion && showResults && (
         <>
           <div className="sd-card sd-results">
@@ -198,34 +213,48 @@ const StudentDashboard = () => {
             </div>
 
             <div className="sd-result-body">
-              {(currentQuestion.options || []).map((optText, idx) => {
-                const pct = percentMap[optText] ?? 0;
+              {(currentQuestion.options || []).map((optionText, index) => {
+                const percentage = percentMap[optionText] ?? 0;
+                
                 return (
-                  <div key={idx} className="sd-result-row">
-                    <div className="sd-result-fill" style={{ width: `${Math.max(pct, 0)}%` }} />
-                    <span className="sd-result-chip">{idx + 1}</span>
-                    <span className="sd-result-text">{optText}</span>
-                    <span className="sd-result-pct">{pct}%</span>
+                  <div key={index} className="sd-result-row">
+                    <div 
+                      className="sd-result-fill" 
+                      style={{ width: `${Math.max(percentage, 0)}%` }} 
+                    />
+                    <span className="sd-result-chip">{index + 1}</span>
+                    <span className="sd-result-text">{optionText}</span>
+                    <span className="sd-result-pct">{percentage}%</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <p className="sd-wait-next">Wait for the teacher to ask a new question..</p>
+          <p className="sd-wait-next">
+            Wait for the teacher to ask a new question..
+          </p>
         </>
       )}
 
-      {/* Chat */}
-    <ChatWidget
-  userType="student"
-  studentId={studentId}
-  name={studentName}
-/>
+      {/* Chat Widget */}
+      <ChatWidget
+        userType="student"
+        studentId={studentId}
+        name={studentName}
+      />
+
+      {/* Error message */}
       {error && <div className="sd-error">{error}</div>}
 
+      {/* Leave poll button */}
       <div className="sd-leave">
-        <button className="sd-leave-btn" onClick={() => navigate('/')}>Leave Poll</button>
+        <button 
+          className="sd-leave-btn" 
+          onClick={() => navigate('/')}
+        >
+          Leave Poll
+        </button>
       </div>
     </div>
   );
